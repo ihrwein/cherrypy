@@ -95,11 +95,6 @@ def assert_native(n):
     if not isinstance(n, nativestr):
         raise TypeError("n must be a native str (got %s)" % type(n).__name__)
 
-def always_bytes(str, encoding='utf-8'):
-    if isinstance(str, unicodestr):
-        str = str.encode(encoding)
-    return str
-
 try:
     set = set
 except NameError:
@@ -339,3 +334,20 @@ else:
     # Python 3.2 and earlier
     Timer = threading._Timer
     Event = threading._Event
+
+# Prior to Python 2.6, the Thread class did not have a .daemon property.
+# This mix-in adds that property.
+class SetDaemonProperty:
+    def __get_daemon(self):
+        return self.isDaemon()
+    def __set_daemon(self, daemon):
+        self.setDaemon(daemon)
+
+    if sys.version_info < (2,6):
+        daemon = property(__get_daemon, __set_daemon)
+
+# Use subprocess module from Python 2.7 on Python 2.3-2.6
+if sys.version_info < (2,7):
+    import cherrypy._cpcompat_subprocess as subprocess
+else:
+    import subprocess
