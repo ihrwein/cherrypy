@@ -53,8 +53,7 @@ with customized or extended components. The core API's are:
  * Server API
  * WSGI API
 
-These API's are described in the CherryPy specification:
-http://www.cherrypy.org/wiki/CherryPySpec
+These API's are described in the `CherryPy specification <https://bitbucket.org/cherrypy/cherrypy/wiki/CherryPySpec>`_.
 """
 
 __version__ = "3.2.3"
@@ -308,7 +307,7 @@ class _GlobalLogManager(_cplogging.LogManager):
 
     def __call__(self, *args, **kwargs):
         """Log the given message to the app.log or global log as appropriate."""
-        # Do NOT use try/except here. See http://www.cherrypy.org/ticket/945
+        # Do NOT use try/except here. See https://bitbucket.org/cherrypy/cherrypy/issue/945
         if hasattr(request, 'app') and hasattr(request.app, 'log'):
             log = request.app.log
         else:

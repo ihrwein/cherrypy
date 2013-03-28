@@ -7,7 +7,8 @@ when written using CherryPy::
 
     import cherrypy
 
-    class HelloWorld:
+
+    class HelloWorld(object):
         def index(self):
             return "Hello world!"
         index.exposed = True
@@ -43,7 +44,8 @@ Let's take a look at ``hello.py``:
    ``index()`` method will be **exposed**. Only exposed methods can be called
    to answer a request. This feature allows the user to select which methods
    of an object will be accessible via the Web; non-exposed methods can't be
-   accessed.
+   accessed. Another way to **expose** a method is to use the decorator
+   :func:`cherrypy.expose`.
  * ``cherrypy.quickstart(HelloWorld())`` mounts an instance of the HelloWorld
    class, and starts the embedded webserver. It runs until explicitly
    interrupted, either with ``Ctrl-C`` or via a suitable signal (a simple
@@ -74,7 +76,7 @@ module. It contains several members:
 
  * :class:`cherrypy.engine <cherrypy.process.wspbus.Bus>`
    controls process startup, shutdown, and other events, including your own
-   Plugins. See :doc:`/concepts/engine`.
+   Plugins. See :doc:`/tutorial/engine`.
  * :class:`cherrypy.server <cherrypy._cpserver.Server>` configures and controls
    the HTTP server.
  * :class:`cherrypy.request <cherrypy._cprequest.Request>` contains all
@@ -115,14 +117,30 @@ headers (to be returned in the response) in the `headers` attribute of
 
 For example, to find out what "host" to which the client intended to connect::
 
-    @cherrypy.expose
-    def index(self):
-        host = cherrypy.request.headers('Host')
-        return "You have successfully reached " + host
+    import cherrypy
+
+
+    class HelloWorld(object):    
+        @cherrypy.expose
+        def index(self):
+            host = cherrypy.request.headers['Host']
+            return "You have successfully reached " + host
+
+    cherrypy.quickstart(HelloWorld())
 
 Or to set headers on the response::
 
-    @cherrypy.expose
-    def index(self):
-        cherrypy.response.headers['Content-Type'] = 'application/jpeg'
-        return my_jpeg_data()
+    import cherrypy
+
+
+    class HelloWorld(object):    
+        def _get_jpeg_data(self):
+	    """This method should return the jpeg data"""
+	    return ""
+    
+        @cherrypy.expose
+        def index(self):
+            cherrypy.response.headers['Content-Type'] = 'application/jpeg'
+            return self._get_jpeg_data()
+
+    cherrypy.quickstart(HelloWorld())

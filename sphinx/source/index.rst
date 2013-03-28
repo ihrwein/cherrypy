@@ -2,7 +2,7 @@
    :hidden:
 
    intro/index
-   concepts/index
+   tutorial/index
    progguide/index
    deployguide/index
    refman/index
@@ -20,7 +20,7 @@ Sections
 ---------------------------------
 *The who, what, and why of CherryPy*
 
-:doc:`Concepts <concepts/index>`
+:doc:`Tutorial <tutorial/index>`
 ---------------------------------
 *The basics of CherryPy*
 

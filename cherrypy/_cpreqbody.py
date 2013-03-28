@@ -277,7 +277,7 @@ class Entity(object):
 
     Between the ``before_request_body`` and ``before_handler`` tools, CherryPy
     tries to process the request body (if any) by calling
-    :func:`request.body.process<cherrypy._cpreqbody.RequestBody.process`.
+    :func:`request.body.process<cherrypy._cpreqbody.RequestBody.process>`.
     This uses the ``content_type`` of the Entity to look up a suitable processor
     in :attr:`Entity.processors<cherrypy._cpreqbody.Entity.processors>`, a dict.
     If a matching processor cannot be found for the complete Content-Type,
@@ -895,7 +895,7 @@ class RequestBody(Entity):
     """The buffer size used when reading the socket."""
 
     # Don't parse the request body at all if the client didn't provide
-    # a Content-Type header. See http://www.cherrypy.org/ticket/790
+    # a Content-Type header. See https://bitbucket.org/cherrypy/cherrypy/issue/790
     default_content_type = ''
     """This defines a default ``Content-Type`` to use if no Content-Type header
     is given. The empty string is used for RequestBody, which results in the
