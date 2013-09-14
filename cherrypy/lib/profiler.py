@@ -53,7 +53,7 @@ import os, os.path
 import sys
 import warnings
 
-from cherrypy._cpcompat import BytesIO
+from cherrypy._cpcompat import StringIO
 
 _count = 0
 
@@ -85,7 +85,7 @@ class Profiler(object):
     def stats(self, filename, sortby='cumulative'):
         """:rtype stats(index): output of print_stats() for the given profile.
         """
-        sio = BytesIO()
+        sio = StringIO()
         if sys.version_info >= (2, 5):
             s = pstats.Stats(os.path.join(self.path, filename), stream=sio)
             s.strip_dirs()
@@ -142,9 +142,9 @@ class ProfileAggregator(Profiler):
         self.count = _count = _count + 1
         self.profiler = profile.Profile()
 
-    def run(self, func, *args):
+    def run(self, func, *args, **params):
         path = os.path.join(self.path, "cp_%04d.prof" % self.count)
-        result = self.profiler.runcall(func, *args)
+        result = self.profiler.runcall(func, *args, **params)
         self.profiler.dump_stats(path)
         return result
 

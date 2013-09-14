@@ -92,10 +92,14 @@ In this example, the URL ``http://localhost/some/page`` will be mapped to the
 In our HelloWorld example, adding the ``http://localhost/onepage/`` mapping
 to ``OnePage().index`` could be done like this::
 
+    import cherrypy
+
+
     class OnePage(object):
         def index(self):
             return "one page!"
         index.exposed = True
+
 
     class HelloWorld(object):
         onepage = OnePage()
@@ -114,11 +118,29 @@ Normal methods
 CherryPy can directly call methods on the mounted objects, if it receives a
 URL that is directly mapped to them. For example::
 
-    def foo(self):
+
+    """This example can handle the URIs
+    /    -> OnePage.index
+    /foo -> OnePage.foo -> foo
+    """
+    import cherrypy
+
+
+    class OnePage(object):
+        def index(self):
+            return "one page!"
+        index.exposed = True
+
+
+    def foo():
         return 'Foo!'
     foo.exposed = True
 
-    root.foo = foo
+    if __name__ == '__main__':
+        root = OnePage()
+        root.foo = foo
+        cherrypy.quickstart(root)
+
 
 In the example, ``root.foo`` contains a function object, named ``foo``. When
 CherryPy receives a request for the ``/foo`` URL, it will automatically call
@@ -173,10 +195,9 @@ method) can receive additional data from HTML or other forms using
 
 The following code can be used to handle this URL::
 
-    class Root:
+    class Root(object):
         def doLogin(self, username=None, password=None):
-            # check the username & password
-            ...
+            """Check the username & password"""
         doLogin.exposed = True
 
 Both arguments have to be declared as *keyword arguments*. The default value
@@ -212,9 +233,10 @@ that takes the year, month and day as part of the URL
 ``http://localhost/blog/2005/01/17``. This URL can be handled by the
 following code::
 
-    class Root:
+    class Root(object):
         def blog(self, year, month, day):
-            ...
+	    """Deliver the blog post. According to *year* *month* *day*.
+	    """
         blog.exposed = True
 
     root = Root()
@@ -244,12 +266,16 @@ any other method with positional arguments, but are defined one level further
 down, in case you have multiple methods to expose. For example, we could have
 written the above "blog" example equivalently with a "default" method instead::
 
-    class Blog:
+    class Blog(object):
         def default(self, year, month, day):
-            ...
+            """This method catch the positional arguments 
+             *year*,*month*,*day* to delivery the blog content.
+            """
         default.exposed = True
 
-    class Root: pass
+
+    class Root(object):
+        pass
 
     root = Root()
     root.blog = Blog()
@@ -369,7 +395,7 @@ Replacing page handlers
 -----------------------
 
 The handler that's going to be called during a request is available at
-:attr:`cherrypy.request.handler <cherrypy._cprequest.Request.handler`,
+:attr:`cherrypy.request.handler <cherrypy._cprequest.Request.handler>`,
 which means your code has a chance to replace it before the handler runs.
 It's a snap to write a Tool to do so with a
 :class:`HandlerWrapperTool <cherrypy._cptools.HandlerWrapperTool>`::

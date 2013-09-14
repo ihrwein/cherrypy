@@ -195,7 +195,7 @@ except ImportError:
 class DropPrivileges(SimplePlugin):
     """Drop privileges. uid/gid arguments not available on Windows.
 
-    Special thanks to Gavin Baker: http://antonym.org/2005/12/dropping-privileges-in-python.html
+    Special thanks to `Gavin Baker <http://antonym.org/2005/12/dropping-privileges-in-python.html>`_ 
     """
 
     def __init__(self, bus, umask=None, uid=None, gid=None):
@@ -406,7 +406,7 @@ class PIDFile(SimplePlugin):
         if self.finalized:
             self.bus.log('PID %r already written to %r.' % (pid, self.pidfile))
         else:
-            open(self.pidfile, "wb").write(ntob("%s" % pid, 'utf8'))
+            open(self.pidfile, "wb").write(ntob("%s\n" % pid, 'utf8'))
             self.bus.log('PID %r written to %r.' % (pid, self.pidfile))
             self.finalized = True
     start.priority = 70

@@ -2,7 +2,7 @@
    :hidden:
 
    intro/index
-   concepts/index
+   tutorial/index
    progguide/index
    deployguide/index
    refman/index
@@ -20,7 +20,7 @@ Sections
 ---------------------------------
 *The who, what, and why of CherryPy*
 
-:doc:`Concepts <concepts/index>`
+:doc:`Tutorial <tutorial/index>`
 ---------------------------------
 *The basics of CherryPy*
 
@@ -38,6 +38,10 @@ Sections
 
 :doc:`Appendix <appendix/index>`
 --------------------------------
+:doc:`FAQ </appendix/faq>`, :doc:`Performance benchmarking </appendix/cherrypyspeed>`, and :doc:`Success Stories </appendix/success>`
+
+Other
+-----
 
 :ref:`genindex`
 

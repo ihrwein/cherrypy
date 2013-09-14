@@ -86,8 +86,11 @@ import re
 import rfc822
 import socket
 import sys
-if 'win' in sys.platform and not hasattr(socket, 'IPPROTO_IPV6'):
-    socket.IPPROTO_IPV6 = 41
+if 'win' in sys.platform and hasattr(socket, "AF_INET6"):
+    if not hasattr(socket, 'IPPROTO_IPV6'):
+        socket.IPPROTO_IPV6 = 41
+    if not hasattr(socket, 'IPV6_V6ONLY'):
+        socket.IPV6_V6ONLY = 27
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -107,9 +110,9 @@ def format_exc(limit=None):
     finally:
         etype = value = tb = None
 
+import operator
 
 from urllib import unquote
-from urlparse import urlparse
 import warnings
 
 if sys.version_info >= (3, 0):
@@ -276,7 +279,7 @@ class SizeCheckWrapper(object):
             self._check_length()
             res.append(data)
             # See https://bitbucket.org/cherrypy/cherrypy/issue/421
-            if len(data) < 256 or data[-1:] == "\n":
+            if len(data) < 256 or data[-1:] == LF:
                 return EMPTY.join(res)
 
     def readlines(self, sizehint=0):
@@ -1495,13 +1498,29 @@ class ThreadPool(object):
 
     def grow(self, amount):
         """Spawn new worker threads (not above self.max)."""
-        for i in range(amount):
-            if self.max > 0 and len(self._threads) >= self.max:
-                break
-            worker = WorkerThread(self.server)
-            worker.setName("CP Server " + worker.getName())
-            self._threads.append(worker)
-            worker.start()
+        if self.max > 0:
+            budget = max(self.max - len(self._threads), 0)
+        else:
+            # self.max <= 0 indicates no maximum
+            budget = float('inf')
+
+        n_new = min(amount, budget)
+
+        workers = [self._spawn_worker() for i in range(n_new)]
+        while not self._all(operator.attrgetter('ready'), workers):
+            time.sleep(.1)
+        self._threads.extend(workers)
+
+    def _spawn_worker(self):
+        worker = WorkerThread(self.server)
+        worker.setName("CP Server " + worker.getName())
+        worker.start()
+        return worker
+
+    def _all(func, items):
+        results = [func(item) for item in items]
+        return reduce(operator.and_, results, True)
+    _all = staticmethod(_all)
 
     def shrink(self, amount):
         """Kill off worker threads (not below self.min)."""
@@ -1512,13 +1531,17 @@ class ThreadPool(object):
                 self._threads.remove(t)
                 amount -= 1
 
-        if amount > 0:
-            for i in range(min(amount, len(self._threads) - self.min)):
-                # Put a number of shutdown requests on the queue equal
-                # to 'amount'. Once each of those is processed by a worker,
-                # that worker will terminate and be culled from our list
-                # in self.put.
-                self._queue.put(_SHUTDOWNREQUEST)
+        # calculate the number of threads above the minimum
+        n_extra = max(len(self._threads) - self.min, 0)
+
+        # don't remove more than amount
+        n_to_remove = min(amount, n_extra)
+
+        # put shutdown requests on the queue equal to the number of threads
+        # to remove. As each request is processed by a worker, that worker
+        # will terminate and be culled from the list.
+        for n in range(n_to_remove):
+            self._queue.put(_SHUTDOWNREQUEST)
 
     def stop(self, timeout=5):
         # Must shut down threads here so the code that calls
@@ -1647,7 +1670,7 @@ class HTTPServer(object):
     timeout = 10
     """The timeout in seconds for accepted connections (default 10)."""
 
-    version = "CherryPy/3.2.3"
+    version = "CherryPy/3.2.4"
     """A version string for the HTTPServer."""
 
     software = None

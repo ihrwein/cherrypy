@@ -75,6 +75,11 @@ def json_out(content_type='application/json', debug=False, handler=json_handler)
     package importable; otherwise, ValueError is raised during processing.
     """
     request = cherrypy.serving.request
+    # request.handler may be set to None by e.g. the caching tool
+    # to signal to all components that a response body has already
+    # been attached, in which case we don't need to wrap anything.
+    if request.handler is None:
+        return
     if debug:
         cherrypy.log('Replacing %s with JSON handler' % request.handler,
                      'TOOLS.JSON_OUT')

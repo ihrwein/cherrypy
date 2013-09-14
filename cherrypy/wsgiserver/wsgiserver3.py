@@ -86,8 +86,11 @@ import re
 import email.utils
 import socket
 import sys
-if 'win' in sys.platform and not hasattr(socket, 'IPPROTO_IPV6'):
-    socket.IPPROTO_IPV6 = 41
+if 'win' in sys.platform and hasattr(socket, "AF_INET6"):
+    if not hasattr(socket, 'IPPROTO_IPV6'):
+        socket.IPPROTO_IPV6 = 41
+    if not hasattr(socket, 'IPV6_V6ONLY'):
+        socket.IPV6_V6ONLY = 27
 if sys.version_info < (3,1):
     import io
 else:
@@ -97,10 +100,6 @@ DEFAULT_BUFFER_SIZE = io.DEFAULT_BUFFER_SIZE
 import threading
 import time
 from traceback import format_exc
-from urllib.parse import unquote
-from urllib.parse import urlparse
-from urllib.parse import scheme_chars
-import warnings
 
 if sys.version_info >= (3, 0):
     bytestr = bytes
@@ -266,7 +265,7 @@ class SizeCheckWrapper(object):
             self._check_length()
             res.append(data)
             # See https://bitbucket.org/cherrypy/cherrypy/issue/421
-            if len(data) < 256 or data[-1:] == "\n":
+            if len(data) < 256 or data[-1:].decode() == LF:
                 return EMPTY.join(res)
 
     def readlines(self, sizehint=0):
@@ -1229,13 +1228,24 @@ class ThreadPool(object):
 
     def grow(self, amount):
         """Spawn new worker threads (not above self.max)."""
-        for i in range(amount):
-            if self.max > 0 and len(self._threads) >= self.max:
-                break
-            worker = WorkerThread(self.server)
-            worker.setName("CP Server " + worker.getName())
-            self._threads.append(worker)
-            worker.start()
+        if self.max > 0:
+            budget = max(self.max - len(self._threads), 0)
+        else:
+            # self.max <= 0 indicates no maximum
+            budget = float('inf')
+
+        n_new = min(amount, budget)
+
+        workers = [self._spawn_worker() for i in range(n_new)]
+        while not all(worker.ready for worker in workers):
+            time.sleep(.1)
+        self._threads.extend(workers)
+
+    def _spawn_worker(self):
+        worker = WorkerThread(self.server)
+        worker.setName("CP Server " + worker.getName())
+        worker.start()
+        return worker
 
     def shrink(self, amount):
         """Kill off worker threads (not below self.min)."""
@@ -1246,13 +1256,17 @@ class ThreadPool(object):
                 self._threads.remove(t)
                 amount -= 1
 
-        if amount > 0:
-            for i in range(min(amount, len(self._threads) - self.min)):
-                # Put a number of shutdown requests on the queue equal
-                # to 'amount'. Once each of those is processed by a worker,
-                # that worker will terminate and be culled from our list
-                # in self.put.
-                self._queue.put(_SHUTDOWNREQUEST)
+        # calculate the number of threads above the minimum
+        n_extra = max(len(self._threads) - self.min, 0)
+
+        # don't remove more than amount
+        n_to_remove = min(amount, n_extra)
+
+        # put shutdown requests on the queue equal to the number of threads
+        # to remove. As each request is processed by a worker, that worker
+        # will terminate and be culled from the list.
+        for n in range(n_to_remove):
+            self._queue.put(_SHUTDOWNREQUEST)
 
     def stop(self, timeout=5):
         # Must shut down threads here so the code that calls
@@ -1381,7 +1395,7 @@ class HTTPServer(object):
     timeout = 10
     """The timeout in seconds for accepted connections (default 10)."""
 
-    version = "CherryPy/3.2.3"
+    version = "CherryPy/3.2.4"
     """A version string for the HTTPServer."""
 
     software = None
@@ -1939,7 +1953,7 @@ class WSGIGateway_10(WSGIGateway):
             'REMOTE_ADDR': req.conn.remote_addr or '',
             'REMOTE_PORT': str(req.conn.remote_port or ''),
             'REQUEST_METHOD': req.method.decode('ISO-8859-1'),
-            'REQUEST_URI': req.uri,
+            'REQUEST_URI': req.uri.decode('ISO-8859-1'),
             'SCRIPT_NAME': '',
             'SERVER_NAME': req.server.server_name,
             # Bah. "SERVER_PROTOCOL" is actually the REQUEST protocol.
@@ -1953,7 +1967,6 @@ class WSGIGateway_10(WSGIGateway):
             'wsgi.url_scheme': req.scheme.decode('ISO-8859-1'),
             'wsgi.version': (1, 0),
             }
-
         if isinstance(req.server.bind_addr, basestring):
             # AF_UNIX. This isn't really allowed by WSGI, which doesn't
             # address unix domain sockets. But it's better than nothing.

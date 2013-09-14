@@ -1,7 +1,7 @@
 """A library for integrating pyOpenSSL with CherryPy.
 
 The OpenSSL module must be importable for SSL functionality.
-You can obtain it from http://pyopenssl.sourceforge.net/
+You can obtain it from `here <https://launchpad.net/pyopenssl>`_.
 
 To use this module, set CherryPyWSGIServer.ssl_adapter to an instance of
 SSLAdapter. There are two ways to use SSL:
@@ -96,15 +96,8 @@ class SSL_fileobject(wsgiserver.CP_fileobject):
             if time.time() - start > self.ssl_timeout:
                 raise socket.timeout("timed out")
 
-    def recv(self, *args, **kwargs):
-        buf = []
-        r = super(SSL_fileobject, self).recv
-        while True:
-            data = self._safe_call(True, r, *args, **kwargs)
-            buf.append(data)
-            p = self._sock.pending()
-            if not p:
-                return "".join(buf)
+    def recv(self, size):
+        return self._safe_call(True, super(SSL_fileobject, self).recv, size)
 
     def sendall(self, *args, **kwargs):
         return self._safe_call(False, super(SSL_fileobject, self).sendall,

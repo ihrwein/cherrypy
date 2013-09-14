@@ -110,7 +110,7 @@ This dict contains only those config entries which apply to the given request.
 
 .. note::
 
-   when you do an :class:`InternalRedirect<cherrypy._cperror.InternalRedirect`,
+   when you do an :class:`InternalRedirect<cherrypy._cperror.InternalRedirect>`,
    this config attribute is recalculated for the new path.
 
 Declaration
@@ -353,7 +353,7 @@ tools
 ^^^^^
 
 Enables and configures additional request-processing packages. See the
-:doc:`/concepts/tools` overview for more information.
+:doc:`/tutorial/tools` overview for more information.
 
 wsgi
 ^^^^
@@ -425,10 +425,14 @@ Environments
 ============
 
 The only key that does not exist in a namespace is the *"environment"* entry.
-This special entry *imports* other config entries from a template stored in
-``cherrypy._cpconfig.environments[environment]``. It only applies to the
-global config, and only when you use
-:func:`cherrypy.config.update <cherrypy._cpconfig.Config.update>`.
+It only applies to the global config, and only when you use
+:func:`cherrypy.config.update <cherrypy._cpconfig.Config.update>`. This special
+entry *imports* other config entries from the following template stored in
+``cherrypy._cpconfig.environments[environment]``.
+
+.. literalinclude:: ../../../cherrypy/_cpconfig.py
+    :start-after: Sphinx begin config.environments
+    :end-before: Sphinx end config.environments
 
 If you find the set of existing environments (production, staging, etc) too
 limiting or just plain wrong, feel free to extend them or add new environments::
